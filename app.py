@@ -21,6 +21,8 @@ class TyperM(toga.App):
     def __init__(self, *args, **kwargs):
         if sys.platform != 'win32': return
         try:
+            kwargs['formal_name'] = 'TyperM'  # 添加 formal_name 参数
+            kwargs['app_id'] = 'com.example.typerm'  # 添加 app_id 参数
             super().__init__(*args, **kwargs)
             self.target_string = ""
             self.current_pos = 0
@@ -204,10 +206,17 @@ class TyperM(toga.App):
             logger.error(f"Error in async_stop_mapping: {str(e)}")
 
 def main():
-    if sys.platform != 'win32': return
+    if sys.platform != 'win32': 
+        return
     try:
         logger.debug("Starting TyperM application")
-        return TyperM()
+        app = TyperM()
+        return app
     except Exception as e:
         logger.error(f"Error in main: {str(e)}")
         raise
+
+if __name__ == "__main__":
+    app = main()
+    if app:
+        app.main_loop()  # 保持程序持续运行
