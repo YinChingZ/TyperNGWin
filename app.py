@@ -191,7 +191,7 @@ class TyperM(toga.App):
             logger.debug("Mapping stopped")
 
             keyboard.unhook_all()
-            sys.exit()
+            self.main_window.close()
         except Exception as e:
             logger.error(f"Error in async_stop_mapping: {str(e)}")
 
