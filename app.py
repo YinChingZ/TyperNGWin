@@ -105,9 +105,6 @@ class TyperM(toga.App):
             if event.event_type != keyboard.KEY_DOWN:
                 return
 
-            # Block original user input
-            keyboard.block_key(event.scan_code)
-
             # ESC key detection
             if event.name == 'esc':
                 logger.debug("ESC pressed, stopping mapping")
