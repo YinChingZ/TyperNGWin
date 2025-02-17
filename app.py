@@ -29,7 +29,6 @@ class TyperM(toga.App):
             self.is_mapping = False
             self.is_paused = False
             self.my_loop = asyncio.get_event_loop()
-            self.listener = None
             logger.debug("TyperM initialized successfully")
         except Exception as e:
             logger.error(f"Error in initialization: {str(e)}")
@@ -177,10 +176,7 @@ class TyperM(toga.App):
             self.map_button.text = "停止映射"
             self.status_label.text = "映射进行中 (按ESC停止)"
 
-            self.listener = keyboard.Listener(
-                on_press=self.handle_key_event
-            )
-            self.listener.start()
+            keyboard.hook(self.handle_key_event)
 
             self.main_window.hide()
             logger.debug("Mapping started: Listener installed and window hidden")
@@ -196,10 +192,6 @@ class TyperM(toga.App):
             self.main_window.show()
             self.show_notification("TyperM", "映射已停止")
             logger.debug("Mapping stopped")
-
-            if self.listener:
-                self.listener.stop()
-                self.listener = None
 
             keyboard.unhook_all()
         except Exception as e:
