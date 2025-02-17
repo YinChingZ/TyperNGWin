@@ -38,9 +38,6 @@ class TyperM(toga.App):
         if sys.platform != 'win32': return
         """Construct and show the Toga application."""
         try:
-            self.main_window = toga.MainWindow(title=self.formal_name, size=(800, 600), resizable=False)
-            self.main_window.show()
-
             main_box = toga.Box(style=Pack(direction=COLUMN, padding=10, flex=1))
             
             # 创建标题标签
@@ -82,6 +79,7 @@ class TyperM(toga.App):
 
             self.main_window = toga.MainWindow(title=self.formal_name, size=(800, 600), resizable=False)
             self.main_window.content = main_box
+            self.main_window.show()
             logger.debug("UI setup completed")
             
         except Exception as e:
