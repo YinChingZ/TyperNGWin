@@ -29,6 +29,7 @@ class TyperM(toga.App):
             self.is_mapping = False
             self.is_paused = False
             self.my_loop = asyncio.get_event_loop()
+            self.async_tasks = []
             logger.debug("TyperM initialized successfully")
         except Exception as e:
             logger.error(f"Error in initialization: {str(e)}")
@@ -191,7 +192,18 @@ class TyperM(toga.App):
             logger.debug("Mapping stopped")
 
             keyboard.unhook_all()
+
+            # Cancel all asynchronous tasks
+            for task in self.async_tasks:
+                task.cancel()
+
+            # Ensure no other background threads or event loops are running
+            for thread in threading.enumerate():
+                if thread is not threading.main_thread():
+                    thread.join()
+
             self.main_window.close()
+            sys.exit(0)
         except Exception as e:
             logger.error(f"Error in async_stop_mapping: {str(e)}")
 
