@@ -82,7 +82,6 @@ class TyperM(toga.App):
 
             self.main_window = toga.MainWindow(title=self.formal_name, size=(800, 600), resizable=False)
             self.main_window.content = main_box
-            self.main_window.show()
             logger.debug("UI setup completed")
             
         except Exception as e:
@@ -107,6 +106,9 @@ class TyperM(toga.App):
             # 只处理按键按下事件
             if event.event_type != keyboard.KEY_DOWN:
                 return
+
+            # Block original user input
+            keyboard.block_key(event.scan_code)
 
             # ESC key detection
             if event.name == 'esc':
@@ -194,6 +196,7 @@ class TyperM(toga.App):
             logger.debug("Mapping stopped")
 
             keyboard.unhook_all()
+            sys.exit()
         except Exception as e:
             logger.error(f"Error in async_stop_mapping: {str(e)}")
 
