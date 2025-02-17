@@ -144,7 +144,7 @@ class TyperM(toga.App):
         """使用 keyboard 库模拟按键"""
         try:
             logger.debug(f"Typing character: {char}")
-            keyboard.write(char)
+            keyboard.press_and_release(char)
         except Exception as e:
             logger.error(f"Error typing character: {str(e)}")
 
@@ -173,7 +173,7 @@ class TyperM(toga.App):
             self.map_button.text = "停止映射"
             self.status_label.text = "映射进行中 (按ESC停止)"
 
-            keyboard.hook(self.handle_key_event)
+            keyboard.hook(self.handle_key_event, suppress=True)
 
             self.main_window.hide()
             logger.debug("Mapping started: Listener installed and window hidden")
