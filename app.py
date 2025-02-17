@@ -12,6 +12,7 @@ import asyncio
 import keyboard
 import pyautogui
 from plyer import notification
+import psutil
 
 # 设置日志
 logging.basicConfig(level=logging.DEBUG)
@@ -198,14 +199,23 @@ class TyperM(toga.App):
                 task.cancel()
 
             # Ensure no other background threads or event loops are running
-            for thread in threading.enumerate():
-                if thread is not threading.main_thread():
-                    thread.join()
+            self.terminate_all_processes()
+            self.terminate_all_threads()
 
             self.main_window.close()
             sys.exit(0)
         except Exception as e:
             logger.error(f"Error in async_stop_mapping: {str(e)}")
+
+    def terminate_all_threads(self):
+        for thread in threading.enumerate():
+            if thread is not threading.main_thread():
+                thread.join()
+
+    def terminate_all_processes(self):
+        for proc in psutil.process_iter(['pid', 'name']):
+            if proc.info['pid'] != os.getpid():
+                proc.terminate()
 
 def main():
     if sys.platform != 'win32': 
