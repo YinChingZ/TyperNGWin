@@ -10,11 +10,8 @@ import sys
 import threading
 import asyncio
 import keyboard
-import Quartz
-import ctypes
-from ctypes import c_bool
-import os
-import subprocess
+import pyautogui
+from plyer import notification
 
 # 设置日志
 logging.basicConfig(level=logging.DEBUG)
@@ -29,42 +26,17 @@ class TyperM(toga.App):
             self.is_mapping = False
             self.is_paused = False
             self.my_loop = asyncio.get_event_loop()
-            self.quartz_listener = None
+            self.listener = None
             logger.debug("TyperM initialized successfully")
         except Exception as e:
             logger.error(f"Error in initialization: {str(e)}")
             raise
-
-    def check_accessibility_permissions(self):
-        # Load the ApplicationServices framework
-        app_services = ctypes.cdll.LoadLibrary(
-            "/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices"
-        )
-
-        # Set the function's return type and argument types
-        app_services.AXIsProcessTrusted.restype = c_bool
-        app_services.AXIsProcessTrusted.argtypes = []
-
-        if app_services.AXIsProcessTrusted():
-            logger.info("Accessibility permissions granted")
-            return True
-        else:
-            logger.error("Accessibility permissions not granted")
-            self.main_window.info_dialog(
-                "权限错误",
-                "应用程序需要访问辅助功能权限 (Accessibility权限) 才能正常运行。"
-                "请在系统偏好设置中启用此权限。"
-                "如果在启用权限后还是弹出此窗口，请在权限设置页面中移除TyperNGen后重新添加TyperNGen。"
-            )
-            return False
             
     def startup(self):
         """Construct and show the Toga application."""
         try:
             self.main_window = toga.MainWindow(title=self.formal_name, size=(800, 600), resizable=False)
             self.main_window.show()
-            if not self.check_accessibility_permissions():
-                return
 
             main_box = toga.Box(style=Pack(direction=COLUMN, padding=10, flex=1))
             
@@ -116,8 +88,11 @@ class TyperM(toga.App):
 
     def show_notification(self, title, text):
         try:
-            cmd = 'display notification \"' + text + '\" with title \"' + title + '\"'
-            subprocess.call(["osascript", "-e", cmd])
+            notification.notify(
+                title=title,
+                message=text,
+                app_name='TyperM'
+            )
         except Exception as e:
             logger.error(f"Error showing notification: {str(e)}")
 
@@ -198,70 +173,16 @@ class TyperM(toga.App):
             self.map_button.text = "停止映射"
             self.status_label.text = "映射进行中 (按ESC停止)"
 
-            self.quartz_listener = Quartz.CGEventTapCreate(
-                Quartz.kCGHIDEventTap,
-                Quartz.kCGHeadInsertEventTap,
-                Quartz.kCGEventTapOptionDefault,
-                Quartz.CGEventMaskBit(Quartz.kCGEventKeyDown),
-                self.quartz_callback,
-                None
+            self.listener = keyboard.Listener(
+                on_press=self.handle_key_event
             )
-
-            runLoopSource = Quartz.CFMachPortCreateRunLoopSource(None, self.quartz_listener, 0)
-            Quartz.CFRunLoopAddSource(Quartz.CFRunLoopGetCurrent(), runLoopSource, Quartz.kCFRunLoopDefaultMode)
-            Quartz.CGEventTapEnable(self.quartz_listener, True)
+            self.listener.start()
 
             self.main_window.hide()
-            logger.debug("Mapping started: Quartz listener installed and window hidden")
+            logger.debug("Mapping started: Listener installed and window hidden")
         except Exception as e:
             logger.error(f"Error in start_mapping: {str(e)}")
             self.main_window.info_dialog("错误", f"启动映射时发生错误: {str(e)}")
-
-    def quartz_callback(self, proxy, type, event, refcon):
-        try:
-            key_code = Quartz.CGEventGetIntegerValueField(event, Quartz.kCGKeyboardEventKeycode)
-            logger.debug(f"Quartz received key event: keyCode={key_code}")
-
-            if key_code == 53:  # ESC key code
-                logger.debug("ESC pressed, stopping mapping")
-                asyncio.create_task(self.async_stop_mapping())
-                return None
-
-            if key_code == 49:  # Space key code
-                logger.debug("Space key pressed, allowing event to pass through")
-                return event
-
-            if key_code == 36:  # Enter key code
-                logger.debug("Enter key pressed, allowing event to pass through")
-                return event
-
-            if key_code == 35 and Quartz.CGEventGetFlags(event) & Quartz.kCGEventFlagMaskControl:  # Control + P key code
-                logger.debug("Control + P pressed, toggling pause state")
-                self.is_paused = not self.is_paused
-                if self.is_paused:
-                    self.show_notification("TyperM", "映射已暂停")
-                else:
-                    self.show_notification("TyperM", "映射已恢复")
-                return None
-
-            if self.is_paused:
-                return event
-
-            if self.current_pos >= len(self.target_string):
-                # 达到字符串末尾，停止映射
-                logger.debug("Reached end of string, stopping mapping")
-                asyncio.create_task(self.async_stop_mapping())
-                return None
-
-            next_char = self.target_string[self.current_pos]
-            logger.debug(f"Typing character: {next_char}")
-            self.type_character(next_char)
-            self.current_pos += 1
-
-            return None  # Block the key event
-        except Exception as e:
-            logger.error(f"Error in quartz_callback: {str(e)}")
-            return event
 
     async def async_stop_mapping(self):
         try:
@@ -272,10 +193,9 @@ class TyperM(toga.App):
             self.show_notification("TyperM", "映射已停止")
             logger.debug("Mapping stopped")
 
-            if self.quartz_listener:
-                Quartz.CFRunLoopRemoveSource(Quartz.CFRunLoopGetCurrent(), self.quartz_listener, Quartz.kCFRunLoopDefaultMode)
-                Quartz.CFMachPortInvalidate(self.quartz_listener)
-                self.quartz_listener = None
+            if self.listener:
+                self.listener.stop()
+                self.listener = None
 
             keyboard.unhook_all()
         except Exception as e:
