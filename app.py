@@ -19,6 +19,7 @@ logger = logging.getLogger('typerm')
 
 class TyperM(toga.App):
     def __init__(self, *args, **kwargs):
+        if sys.platform != 'win32': return
         try:
             super().__init__(*args, **kwargs)
             self.target_string = ""
@@ -33,6 +34,7 @@ class TyperM(toga.App):
             raise
             
     def startup(self):
+        if sys.platform != 'win32': return
         """Construct and show the Toga application."""
         try:
             self.main_window = toga.MainWindow(title=self.formal_name, size=(800, 600), resizable=False)
@@ -202,6 +204,7 @@ class TyperM(toga.App):
             logger.error(f"Error in async_stop_mapping: {str(e)}")
 
 def main():
+    if sys.platform != 'win32': return
     try:
         logger.debug("Starting TyperM application")
         return TyperM()
