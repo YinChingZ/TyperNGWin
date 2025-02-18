@@ -221,4 +221,5 @@ def main():
 if __name__ == "__main__":
     app = main()
     if app:
-        app.main_loop()  # 保持程序持续运行
+        while app.is_mapping:
+            app.main_loop()  # 保持程序持续运行
